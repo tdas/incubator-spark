@@ -29,7 +29,8 @@ import org.apache.spark.SparkContext
  * field on each tweet, but it’s often “English” because peoples’ browsers are
  * English even if they tweet in a different one.
  *
- * You can run this program from the root of the Spark directory with the following command:
+ * You can run this program from the root of the Spark directory with the following command
+ * (create and use your own twitter credentials from https://dev.twitter.com/apps)
  * <code>
  * ./run-example \
  * -Dtwitter4j.oauth.consumerKey=bsFgduP6xlqpX8MeDw \
@@ -61,7 +62,7 @@ object TwitterClusteringLanguages {
       Seq(System.getenv("SPARK_EXAMPLES_JAR")))
     val ssc = new StreamingContext(sc, Seconds(5))
 
-    //Grab Tweets from file and prcess them
+    //Grab Tweets from file and process them
     //TODO: make tweets available publicly
     val file = sc.textFile("tweets")
     val texts = file.map(line => line.split('\t')(5))
@@ -69,6 +70,7 @@ object TwitterClusteringLanguages {
     //Featurize the existing tweets then build the model using MLlib
     val vectors = texts.map(featurize)
     //TODO: make the modeling parameters program arguments
+    //TODO: break out model training to a separate process
     val model = KMeans.train(vectors, 10, 10)
 
     //Create the stream

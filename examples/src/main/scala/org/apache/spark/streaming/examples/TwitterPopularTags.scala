@@ -48,6 +48,17 @@ object TwitterPopularTags {
 
     val (master, filters) = (args.head, args.tail)
 
+    /*
+
+    // Set these to the correct keys and tokens from your twitter account.
+    
+    System.setProperty("twitter4j.oauth.consumerKey", "XXX")
+    System.setProperty("twitter4j.oauth.consumerSecret", "XXX")
+    System.setProperty("twitter4j.oauth.accessToken", "XXX")
+    System.setProperty("twitter4j.oauth.accessTokenSecret", "XXX")
+    */
+
+
     val ssc = new StreamingContext(master, "TwitterPopularTags", Seconds(2),
       System.getenv("SPARK_HOME"), StreamingContext.jarOfClass(this.getClass))
     val stream = TwitterUtils.createStream(ssc, None, filters)

@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.spark.deploy
+package org.apache.spark.mllib.linalg
 
-private[spark] class ApplicationDescription(
-    val name: String,
-    val maxCores: Option[Int],
-    val memoryPerSlave: Int,
-    val command: Command,
-    val sparkHome: Option[String],
-    val appUiUrl: String)
-  extends Serializable {
+import org.apache.spark.rdd.RDD
 
-  val user = System.getProperty("user.name", "<unknown>")
 
-  override def toString: String = "ApplicationDescription(" + name + ")"
-}
+/**
+ * Class that represents a sparse matrix
+ *
+ * @param data RDD of nonzero entries
+ * @param m number of rows
+ * @param n numner of columns
+ */
+case class SparseMatrix(val data: RDD[MatrixEntry], val m: Int, val n: Int)

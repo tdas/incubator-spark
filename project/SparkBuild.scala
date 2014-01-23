@@ -277,7 +277,6 @@ object SparkBuild extends Build {
         "com.codahale.metrics"     % "metrics-graphite" % "3.0.0",
         "com.twitter"             %% "chill"            % "0.3.1",
         "com.twitter"              % "chill-java"       % "0.3.1",
-        "com.typesafe"             % "config"           % "1.0.2",
         "com.clearspring.analytics" % "stream"          % "2.5.1"
       )
   )
@@ -317,7 +316,10 @@ object SparkBuild extends Build {
   ) ++ assemblySettings ++ extraAssemblySettings
 
   def graphxSettings = sharedSettings ++ Seq(
-    name := "spark-graphx"
+    name := "spark-graphx",
+    libraryDependencies ++= Seq(
+      "org.apache.commons" % "commons-math3" % "3.2"
+    )
   )
 
   def bagelSettings = sharedSettings ++ Seq(

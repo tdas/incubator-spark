@@ -15,18 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.spark.deploy
+package org.apache.spark.mllib.linalg
 
-private[spark] class ApplicationDescription(
-    val name: String,
-    val maxCores: Option[Int],
-    val memoryPerSlave: Int,
-    val command: Command,
-    val sparkHome: Option[String],
-    val appUiUrl: String)
-  extends Serializable {
-
-  val user = System.getProperty("user.name", "<unknown>")
-
-  override def toString: String = "ApplicationDescription(" + name + ")"
-}
+/**
+ * Class that represents the SV decomposition of a matrix
+ *
+ * @param U such that A = USV^T
+ * @param S such that A = USV^T
+ * @param V such that A = USV^T
+ */
+case class MatrixSVD(val U: SparseMatrix,
+                     val S: SparseMatrix,
+                     val V: SparseMatrix)

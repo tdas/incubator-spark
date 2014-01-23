@@ -17,10 +17,18 @@
 
 package org.apache.spark.streaming.examples
 
+import javax.servlet.http.HttpServletRequest
+
+import scala.xml.Node
+
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import StreamingContext._
+import org.apache.spark.streaming.StreamingContext._
 import org.apache.spark.SparkContext._
 import org.apache.spark.streaming.twitter._
+import org.apache.spark.Logging
+import org.apache.spark.ui.JettyUtils
+import org.apache.spark.ui.JettyUtils._
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Calculates popular hashtags (topics) over sliding 10 and 60 second windows from a Twitter
@@ -46,29 +54,62 @@ object TwitterPopularTags {
 
     val hashTags = stream.flatMap(status => status.getText.split(" ").filter(_.startsWith("#")))
 
+    val ui = new TwitterPopularTagsUI()
+
     val topCounts60 = hashTags.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(60))
                      .map{case (topic, count) => (count, topic)}
                      .transform(_.sortByKey(false))
 
-    val topCounts10 = hashTags.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(10))
-                     .map{case (topic, count) => (count, topic)}
-                     .transform(_.sortByKey(false))
-
-
     // Print popular hashtags
     topCounts60.foreachRDD(rdd => {
-      val topList = rdd.take(5)
+      val topList = rdd.take(20)
       println("\nPopular topics in last 60 seconds (%s total):".format(rdd.count()))
       topList.foreach{case (count, tag) => println("%s (%s tweets)".format(tag, count))}
-    })
-
-    topCounts10.foreachRDD(rdd => {
-      val topList = rdd.take(5)
-      println("\nPopular topics in last 10 seconds (%s total):".format(rdd.count()))
-      topList.foreach{case (count, tag) => println("%s (%s tweets)".format(tag, count))}
+      ui.updateData(topList.map(_.swap))
     })
 
     ssc.start()
     ssc.awaitTermination()
   }
 }
+
+
+class TwitterPopularTagsUI(port: Int = 6060) extends Logging {
+  val handler = (request: HttpServletRequest) => this.render(request)
+  val tagFreqData = ArrayBuffer[(String, Int)]()
+  JettyUtils.startJettyServer("0.0.0.0", port, Seq( ("/", handler) ))
+
+  def updateData(newData: Seq[(String, Int)]) {
+    tagFreqData.clear()
+    tagFreqData ++= newData
+  }
+
+  def render(request: HttpServletRequest): Seq[Node] = {
+    <html>
+      <head>
+        <meta http-equiv="refresh" content="1"/>
+      </head>
+      <body>
+        <table class="table table-bordered table-striped table-condensed sortable table-fixed">
+          <thead><th width="80%" align="left">Tag</th><th width="20%">Frequency</th></thead>
+          <tbody>
+            {tagFreqData.map(r => makeRow(r))}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  }
+
+  def makeRow(tagFreq: (String, Int)): Seq[Node] = {
+    <tr>
+      <td>
+        {tagFreq._1}
+      </td>
+      <td>
+        {tagFreq._2}
+      </td>
+    </tr>
+  }
+}
+
+

@@ -42,17 +42,19 @@ stream from sources such as Kafka and Flume, or by applying high-level
 operations on other DStreams. Internally, a DStream is represented as a sequence of
 [RDDs](api/core/index.html#org.apache.spark.rdd.RDD).
 
-This guide shows some how to start writing Spark Streaming programs with DStreams. Note
-that throughout this guide, you will find tabs that let's you choose between Scala and Java code
-snippets.
+This guide shows some how to start writing Spark Streaming programs with DStreams. You can
+write Spark Streaming programs in Scala or Java and this guide presents examples in both
+languages. You will find tabs throughout this guide that let's you choose between Scala and Java
+code snippets.
 
 ***************************************************************************************************  
 
 # A Quick Example
 Before we go into the details of how to write your own Spark Streaming program,
 let's take a quick look at what a simple Spark Streaming program looks like. Let's say we want to
- count the number of words in text data received over a simple socket connection. All you need to
-  do is as follows. You can click on the following tabs to choose Scala or Java example.
+count the number of words in text data received over a simple socket connection. All you need to
+do is as follows. You can click on the following tabs to choose between the Scala or the Java
+example.
 
 <div class="codetabs">
 <div data-lang="scala"  markdown="1" >
@@ -156,7 +158,7 @@ JavaDStream<String> words = lines.flatMap(
   });
 {% endhighlight %}
 
-`flatMap` is a one-to-many DStream operation that creates a new DStream by
+`flatMap` is a DStream operation that creates a new DStream by
 generating multiple new records from each records of the source DStream. In this case,
 each line will be split into multiple words, generating the `words` DStream.
 Note that we defined the transformation using a
@@ -403,9 +405,13 @@ be processed. Note that
  the data directory.
  * Once moved the files must not be changed.
 
-Additional functionality for creating DStreams from soures like Kafka, Flume, ZeroMQ, Twitter, etc.
+For more details, eee the API documentations of the relevant functions in [StreamingContext]() for
+Scala and [JavaStreamingContext] for Java.
+
+Additional functionality for creating DStreams from sources like Kafka, Flume, ZeroMQ, Twitter,
+etc.
 can be imported by adding the right dependencies as explained in an
-[earlier](#linking-and-initializing) section. To take the
+[earlier](#linking) section. To take the
 case of Kafka, after adding the artifact `spark-streaming-kafka_{{site.SCALA_VERSION}}` to the
 project dependencies, you can create DStream from Kafka as
 
@@ -424,7 +430,9 @@ KafkaUtils.createStream(javaStreamingContext, kafkaParams, ...);
 </div>
 </div>
 
-You can also implement your own custom receiver for your sources. Find more details at
+For more details, see the corresponding [API documentation](#where-to-go-from-here).
+
+Furthermore, you can also implement your own custom receiver for your sources. Find more details at
 the [Custom Receiver Guide](streaming-custom-receivers.html).
 
 ## Operations
@@ -538,7 +546,7 @@ def updateFunction(newValues: Seq[Int], runningCount: Option[Int]): Option[Int] 
 {% endhighlight %}
 
 And this is applied on a DStream containing words (say, the `pairs` DStream containing `(word,
-1)` pairs in the [quick example](#a-quick-example)).
+1)` pairs in the [earlier example](#a-quick-example)).
 
 {% highlight scala %}
 val runningCounts = pairs.updateStateByKey[Int](updateFunction _)
@@ -611,8 +619,6 @@ JavaPairDStream<String, Integer> cleanedDStream = inputDStream.transform(
   });
 {% endhighlight %}
 
-
-
 </div>
 </div>
 
@@ -622,34 +628,83 @@ In fact, you can also use [machine learning](mllib-guide.html) and
 <h4>Window Operations</h4>
 
 Finally, Spark Streaming also provides *windowed computations*, which allow you to apply
-transformations over a sliding window of data. All window functions take two parameters.
+transformations over a sliding window of data. This following figure illustrates this sliding
+window.
 
- * <i>windowDuration</i> - This represents the width of the window.
- * <i>slideDuration</i> - This represents the frequency at which the window is calculated.
+<p style="text-align: center;">
+  <img src="img/streaming-dstream-window.png"
+       title="Spark Streaming data flow"
+       alt="Spark Streaming"
+       width="60%" />
+</p>
 
-Both these parameters must be a multiple of the batch interval of the source DStream.
+At any point of time, the window-based operation is applied over a certain duration of the data in
+the stream. In the figure, the operation is applied over last 3 time units of data,
+every 2 time units. This shows that any window-based operation needs to specify two parameters.
+
+ * <i>window length</i> - The duration of the window (3 in the figure)
+ * <i>slide interval</i> - The interval at which the window-based operation is performed (2 in
+ the figure).
+
+These two parameters must be multiples of the batch interval of the source DStream (1 in the
+figure).
+
+Let's illustrate window operations with an example. Say, you want to extend the
+[earlier example](#a-quick-example) by generating word counts over last 30 seconds of data,
+every 10 seconds. To do this, we have to apply the `reduceByKey` operation on the `pairs` DStream of
+`(word, 1)` pairs over last 30 seconds of data. This is done using the
+operation `reduceByKeyAndWindow`.
+
+<div class="codetabs">
+<div data-lang="scala" markdown="1">
+
+{% highlight scala %}
+// Reduce last 30 seconds of data, every 10 seconds
+val windowedWordCounts = pairs.reduceByKeyAndWindow(_ + _, Seconds(30), Seconds(10))
+{% endhighlight %}
+
+</div>
+<div data-lang="java" markdown="1">
+
+{% highlight java %}
+// Reduce function adding two integers, defined separately for clarity
+Function2<Integer, Integer, Integer> reduceFunc = new Function2<Integer, Integer, Integer>() {
+  @Override public Integer call(Integer i1, Integer i2) throws Exception {
+    return i1 + i2;
+  }
+};
+
+// Reduce last 30 seconds of data, every 10 seconds
+JavaPairDStream<String, Integer> windowedWordCounts = pair.reduceByKeyAndWindow(reduceFunc, new Duration(30000), new Duration(10000));
+{% endhighlight %}
+
+</div>
+</div>
+
+Some of the prominent window-based operations are as follows. All of these operations take the
+said two parameters - <i>windowLength</i> and <i>slideInterval</i>.
 
 <table class="table">
 <tr><th style="width:25%">Transformation</th><th>Meaning</th></tr>
 <tr>
-  <td> <b>window</b>(<i>windowDuration</i>, <i>slideDuration</i>) </td>
+  <td> <b>window</b>(<i>windowLength</i>, <i>slideInterval</i>) </td>
   <td> Return a new DStream which is computed based on windowed batches of the source DStream.
   </td>
 </tr>
 <tr>
-  <td> <b>countByWindow</b>(<i>windowDuration</i>, <i>slideDuration</i>) </td>
+  <td> <b>countByWindow</b>(<i>windowLength</i>, <i>slideInterval</i>) </td>
   <td> Return a sliding window count of elements in the stream.
   </td>
 </tr>
 <tr>
-  <td> <b>reduceByWindow</b>(<i>func</i>, <i>windowDuration</i>, <i>slideDuration</i>) </td>
+  <td> <b>reduceByWindow</b>(<i>func</i>, <i>windowLength</i>, <i>slideInterval</i>) </td>
   <td> Return a new single-element stream, created by aggregating elements in the stream over a
   sliding interval using <i>func</i>. The function should be associative so that it can be computed
   correctly in parallel.
   </td>
 </tr>
 <tr>
-  <td> <b>reduceByKeyAndWindow</b>(<i>func</i>, <i>windowDuration</i>, <i>slideDuration</i>,
+  <td> <b>reduceByKeyAndWindow</b>(<i>func</i>, <i>windowLength</i>, <i>slideInterval</i>,
   [<i>numTasks</i>]) </td>
   <td> When called on a DStream of (K, V) pairs, returns a new DStream of (K, V)
   pairs where the values for each key are aggregated using the given reduce function <i>func</i>
@@ -659,8 +714,8 @@ Both these parameters must be a multiple of the batch interval of the source DSt
   </td>
 </tr>
 <tr>
-  <td> <b>reduceByKeyAndWindow</b>(<i>func</i>, <i>invFunc</i>, <i>windowDuration</i>,
-  <i>slideDuration</i>, [<i>numTasks</i>]) </td>
+  <td> <b>reduceByKeyAndWindow</b>(<i>func</i>, <i>invFunc</i>, <i>windowLength</i>,
+  <i>slideInterval</i>, [<i>numTasks</i>]) </td>
   <td> A more efficient version of the above <code>reduceByKeyAndWindow()</code> where the reduce
   value of each window is calculated incrementally using the reduce values of the previous window.
   This is done by reducing the new data that enter the sliding window, and "inverse reducing" the
@@ -672,7 +727,8 @@ Both these parameters must be a multiple of the batch interval of the source DSt
 </td>
 </tr>
 <tr>
-  <td> <b>countByValueAndWindow</b>(<i>windowDuration</i>, <i>slideDuration</i>, [<i>numTasks</i>]) </td>
+  <td> <b>countByValueAndWindow</b>(<i>windowLength</i>,
+  <i>slideInterval</i>, [<i>numTasks</i>]) </td>
   <td> When called on a DStream of (K, V) pairs, returns a new DStream of (K, Long) pairs where the
   value of each key is its frequency within a sliding window. Like in
   <code>reduceByKeyAndWindow</code>, the number of reduce tasks is configurable through an
@@ -683,34 +739,37 @@ Both these parameters must be a multiple of the batch interval of the source DSt
 </table>
 
 ### Output Operations
-When an output operator is called, it triggers the computation of a stream. Currently the following output operators are defined:
+When an output operator is called, it triggers the computation of a stream. Currently the following
+output operators are defined:
 
 <table class="table">
 <tr><th style="width:30%">Output Operation</th><th>Meaning</th></tr>
 <tr>
-  <td> <b>foreachRDD</b>(<i>func</i>) </td>
-  <td> The fundamental output operator. Applies a function, <i>func</i>, to each RDD generated from the stream. This function should have side effects, such as printing output, saving the RDD to external files, or writing it over the network to an external system. </td>
-</tr>
-
-<tr>
   <td> <b>print</b>() </td>
   <td> Prints first ten elements of every batch of data in a DStream on the driver. </td>
 </tr>
-
+<tr>
+  <td> <b>foreachRDD</b>(<i>func</i>) </td>
+  <td> The fundamental output operator. Applies a function, <i>func</i>, to each RDD generated from
+  the stream. This function should have side effects, such as printing output, saving the RDD to
+  external files, or writing it over the network to an external system. </td>
+</tr>
 <tr>
   <td> <b>saveAsObjectFiles</b>(<i>prefix</i>, [<i>suffix</i>]) </td>
-  <td> Save this DStream's contents as a <code>SequenceFile</code> of serialized objects. The file name at each batch interval is generated based on <i>prefix</i> and <i>suffix</i>: <i>"prefix-TIME_IN_MS[.suffix]"</i>.
+  <td> Save this DStream's contents as a <code>SequenceFile</code> of serialized objects. The file
+  name at each batch interval is generated based on <i>prefix</i> and
+  <i>suffix</i>: <i>"prefix-TIME_IN_MS[.suffix]"</i>.
   </td>
 </tr>
-
 <tr>
   <td> <b>saveAsTextFiles</b>(<i>prefix</i>, [<i>suffix</i>]) </td>
-  <td> Save this DStream's contents as a text files. The file name at each batch interval is generated based on <i>prefix</i> and <i>suffix</i>: <i>"prefix-TIME_IN_MS[.suffix]"</i>. </td>
+  <td> Save this DStream's contents as a text files. The file name at each batch interval is
+  generated based on <i>prefix</i> and <i>suffix</i>: <i>"prefix-TIME_IN_MS[.suffix]"</i>. </td>
 </tr>
-
 <tr>
   <td> <b>saveAsHadoopFiles</b>(<i>prefix</i>, [<i>suffix</i>]) </td>
-  <td> Save this DStream's contents as a Hadoop file. The file name at each batch interval is generated based on <i>prefix</i> and <i>suffix</i>: <i>"prefix-TIME_IN_MS[.suffix]"</i>. </td>
+  <td> Save this DStream's contents as a Hadoop file. The file name at each batch interval is
+  generated based on <i>prefix</i> and <i>suffix</i>: <i>"prefix-TIME_IN_MS[.suffix]"</i>. </td>
 </tr>
 <tr><td></td><td></td></tr>
 </table>
@@ -738,13 +797,13 @@ Because stateful operations have a dependency on previous batches of data, they 
 To enable checkpointing, the developer has to provide the HDFS path to which RDD will be saved. This is done by using
 
 {% highlight scala %}
-ssc.checkpoint(hdfsPath) // assuming ssc is the StreamingContext
+ssc.checkpoint(hdfsPath) // assuming ssc is the StreamingContext or JavaStreamingContext
 {% endhighlight %}
 
 The interval of checkpointing of a DStream can be set by using
 
 {% highlight scala %}
-dstream.checkpoint(checkpointInterval) // checkpointInterval must be a multiple of slide duration of dstream
+dstream.checkpoint(checkpointInterval)
 {% endhighlight %}
 
 For DStreams that must be checkpointed (that is, DStreams created by `updateStateByKey` and `reduceByKeyAndWindow` with inverse function), the checkpoint interval of the DStream is by default set to a multiple of the DStream's sliding interval such that its at least 10 seconds.
@@ -821,7 +880,7 @@ metadata information of the DStreams setup through the `StreamingContext` to a
 HDFS directory (can be any Hadoop-compatible filesystem). This periodic
 *checkpointing* can be enabled by setting a the checkpoint
 directory using `ssc.checkpoint(<checkpoint directory>)` as described
-[earlier](#rdd-checkpointing-within-dstreams). On failure of the driver node,
+[earlier](#rdd-checkpointing). On failure of the driver node,
 the lost `StreamingContext` can be recovered from this information, and restarted.
 
 To allow a Spark Streaming program to be recoverable, it must be written in a way such that
@@ -891,7 +950,8 @@ If the `checkpointDirectory` exists, then the context will be recreated from the
 If the directory does not exist (i.e., running for the first time),
 then the function `functionToCreateContext` will be called to create a new
 context and set up the DStreams. See the Scala example [RecoverableNetworkWordCount](https://github
-.com/apache/incubator-spark/blob/master/examples/src/main/scala/org/apache/spark/streaming/examples/RecoverableNetworkWordCount.scala?source=c).
+.com/apache/incubator-spark/blob/master/examples/src/main/scala/org/apache/spark/streaming/examples/
+RecoverableNetworkWordCount.scala?source=c).
 
 You can also explicitly create a `StreamingContext` from the checkpoint information and start the
  computation  using `new StreamingContext(checkpointDirectory).start()`.
@@ -907,12 +967,26 @@ mechanisms.
 
 There are two different failure behaviors based on which input sources are used.
 
-1. _Using HDFS files as input source_ - Since the data is reliably stored on HDFS, all data can re-computed and therefore no data will be lost due to any failure.
-1. _Using any input source that receives data through a network_ - The received input data is replicated in memory to multiple nodes. Since, all the data in the Spark worker's memory is lost when the Spark driver fails, the past input data will not be accessible and driver recovers. Hence, if stateful and window-based operations are used (like `updateStateByKey`, `window`, `countByValueAndWindow`, etc.), then the intermediate state will not be recovered completely.
+1. _Using HDFS files as input source_ - Since the data is reliably stored on HDFS, all data can
+re-computed and therefore no data will be lost due to any failure.
+1. _Using any input source that receives data through a network_ - The received input data is
+replicated in memory to multiple nodes. Since, all the data in the Spark worker's memory is lost
+when the Spark driver fails, the past input data will not be accessible and driver recovers.
+Hence, if stateful and window-based operations are used
+(like `updateStateByKey`, `window`, `countByValueAndWindow`, etc.), then the intermediate state
+will not be recovered completely.
 
-In future releases, we will support full recoverability for all input sources. Note that for non-stateful transformations like `map`, `count`, and `reduceByKey`, with _all_ input streams, the system, upon restarting, will continue to receive and process new data.
+In future releases, we will support full recoverability for all input sources. Note that for
+non-stateful transformations like `map`, `count`, and `reduceByKey`, with _all_ input streams,
+the system, upon restarting, will continue to receive and process new data.
 
-To better understand the behavior of the system under driver failure with a HDFS source, lets consider what will happen with a file input stream Specifically, in the case of the file input stream, it will correctly identify new files that were created while the driver was down and process them in the same way as it would have if the driver had not failed. To explain further in the case of file input stream, we shall use an example. Lets say, files are being generated every second, and a Spark Streaming program reads every new file and output the number of lines in the file. This is what the sequence of outputs would be with and without a driver failure.
+To better understand the behavior of the system under driver failure with a HDFS source, lets
+consider what will happen with a file input stream Specifically, in the case of the file input
+stream, it will correctly identify new files that were created while the driver was down and
+process them in the same way as it would have if the driver had not failed. To explain further
+in the case of file input stream, we shall use an example. Lets say, files are being generated
+every second, and a Spark Streaming program reads every new file and output the number of lines
+in the file. This is what the sequence of outputs would be with and without a driver failure.
 
 <table class="table">
     <!-- Results table headers -->
@@ -984,10 +1058,22 @@ To better understand the behavior of the system under driver failure with a HDFS
     </tr>
 </table>
 
-If the driver had crashed in the middle of the processing of time 3, then it will process time 3 and output 30 after recovery.
+If the driver had crashed in the middle of the processing of time 3, then it will process time 3
+and output 30 after recovery.
 
 # Where to Go from Here
 
-* API docs - [Scala](api/streaming/index.html#org.apache.spark.streaming.package) and [Java](api/streaming/index.html#org.apache.spark.streaming.api.java.package)
-* More examples - [Scala](https://github.com/apache/incubator-spark/tree/master/examples/src/main/scala/org/apache/spark/streaming/examples) and [Java](https://github.com/apache/incubator-spark/tree/master/examples/src/main/java/org/apache/spark/streaming/examples)
-* [Paper describing Spark Streaming](http://www.eecs.berkeley.edu/Pubs/TechRpts/2012/EECS-2012-259.pdf)
+* API documentation
+  - Main docs of StreamingContext and DStreams in [Scala](api/streaming/index.html#org.apache
+  .spark.streaming.package) and [Java](api/streaming/index.html#org.apache.spark.streaming.api.java.package)
+  - Additional docs for [Kafka](api/external/kafka/index.html#org.apache.spark.streaming.kafka
+  .KafkaUtils$), [Flume](api/external/flume/index.html#org.apache.spark.streaming.flume
+  .FlumeUtils$), [Twitter](api/external/twitter/index.html#org.apache.spark.streaming.twitter
+  .TwitterUtils$), [ZeroMQ](api/external/zeromq/index.html#org.apache.spark.streaming.zeromq
+  .ZeroMQUtils$), and [MQTT](api/external/mqtt/index.html#org.apache.spark.streaming.mqtt.MQTTUtils$)
+
+
+* More examples in [Scala](https://github.com/apache/incubator-spark/tree/master/examples/src/main/
+scala/org/apache/spark/streaming/examples) and [Java](https://github.com/apache/incubator-spark/
+tree/master/examples/src/main/java/org/apache/spark/streaming/examples)
+* [Paper](http://www.eecs.berkeley.edu/Pubs/TechRpts/2012/EECS-2012-259.pdf) describing Spark Streaming

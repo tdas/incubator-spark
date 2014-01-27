@@ -27,7 +27,7 @@ or directly update live dashboards. In fact, you can apply Spark's in-built
 
 Internally, it works as follows. Spark Streaming receives live input data streams and divides
 the data into batches, which are then processed by the Spark engine to generate the final
-stream of result in batches.
+stream of results in batches.
 
 <p style="text-align: center;">
   <img src="img/streaming-flow.png"
@@ -42,9 +42,9 @@ stream from sources such as Kafka and Flume, or by applying high-level
 operations on other DStreams. Internally, a DStream is represented as a sequence of
 [RDDs](api/core/index.html#org.apache.spark.rdd.RDD).
 
-This guide shows some how to start writing Spark Streaming programs with DStreams. You can
+This guide shows you how to start writing Spark Streaming programs with DStreams. You can
 write Spark Streaming programs in Scala or Java and this guide presents examples in both
-languages. You will find tabs throughout this guide that let's you choose between Scala and Java
+languages. You will find tabs throughout this guide that let you choose between Scala and Java
 code snippets.
 
 ***************************************************************************************************  
@@ -52,9 +52,9 @@ code snippets.
 # A Quick Example
 Before we go into the details of how to write your own Spark Streaming program,
 let's take a quick look at what a simple Spark Streaming program looks like. Let's say we want to
-count the number of words in text data received over a simple socket connection. All you need to
-do is as follows. You can click on the following tabs to choose between the Scala or the Java
-example.
+count the number of words in text data received from a data server listening on a TCP
+socket. All you need to
+do is as follows.
 
 <div class="codetabs">
 <div data-lang="scala"  markdown="1" >
@@ -79,7 +79,7 @@ val lines = ssc.socketTextStream(serverIP, serverPort)
 {% endhighlight %}
 
 This `lines` DStream represents the stream of data that will be received from the data
-server. Each records in this DStream is a line of text. Next, we want to split the lines by
+server. Each record in this DStream is a line of text. Next, we want to split the lines by
 space into words.
 
 {% highlight scala %}
@@ -88,7 +88,7 @@ val words = lines.flatMap(_.split(" "))
 {% endhighlight %}
 
 `flatMap` is a one-to-many DStream operation that creates a new DStream by
-generating multiple new records from each records of the source DStream. In this case,
+generating multiple new records from each record of the source DStream. In this case,
 each line will be split into multiple words, generating the `words` DStream. Next,
 we want to count the words.
 
@@ -119,8 +119,6 @@ The complete code can be found in the Spark Streaming example
 org/apache/spark/streaming/examples/NetworkWordCount.scala).
 <br>
 
-
-
 </div>
 <div data-lang="java" markdown="1">
 
@@ -145,7 +143,7 @@ JavaDStream<String> lines = jssc.socketTextStream(serverIP, serverPort);
 {% endhighlight %}
 
 This `lines` DStream represents the stream of data that will be received from the data
-server. Each records in this stream is a line of text. Then, we want to split the the lines by
+server. Each record in this stream is a line of text. Then, we want to split the the lines by
 space into words.
 
 {% highlight java %}
@@ -159,7 +157,7 @@ JavaDStream<String> words = lines.flatMap(
 {% endhighlight %}
 
 `flatMap` is a DStream operation that creates a new DStream by
-generating multiple new records from each records of the source DStream. In this case,
+generating multiple new records from each record of the source DStream. In this case,
 each line will be split into multiple words, generating the `words` DStream.
 Note that we defined the transformation using a
 [FlatMapFunction](api/core/index.html#org.apache.spark.api.java.function.FlatMapFunction) object.
@@ -283,10 +281,11 @@ To write your own Spark Streaming program, you will have to add the following de
     artifactId = spark-streaming_{{site.SCALA_VERSION}}
     version = {{site.SPARK_VERSION}}
 
-For ingesting data from sources like Kafka and Flume that are not covered in Spark Streaming core
+For ingesting data from sources like Kafka and Flume that are not present in the Spark
+Streaming core
  API, you will have to add the corresponding
 artifact `spark-streaming-xyz_{{site.SCALA_VERSION}}` to the dependencies. For example,
-some of the prominent ones are as follows.
+some of the common ones are as follows.
 
 
 <table class="table">
@@ -299,7 +298,7 @@ some of the prominent ones are as follows.
 <tr><td> </td><td></td></tr>
 </table>
 
-For a more a more updated list, please refer to the
+For a more an up-to-date list, please refer to the
 [Apache repository](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.apache.spark%22%20AND%20v%3A%22{{site.SPARK_VERSION}}%22)
 for the full list of supported sources and artifacts.
 
@@ -326,28 +325,29 @@ object has to be created, which is the main entry point of all Spark Streaming f
 A `JavaStreamingContext` object can be created by using
 
 {% highlight scala %}
-new JavaStreamingContext(master, appName, batchDuration, [sparkHome], [jars])
+new JavaStreamingContext(master, appName, batchInterval, [sparkHome], [jars])
 {% endhighlight %}
 </div>
 </div>
 
 The `master` parameter is a standard [Spark cluster URL](scala-programming-guide.html#master-urls)
 and can be "local" for local testing. The `appName` is a name of your program,
-which will be shown on your cluster's web UI. The `batchDuration` is the size of the batches
-(as explained earlier). This must be set carefully such that the cluster can keep up with the
-processing of the data streams. Start with something conservative like 5 seconds. See the
-[Performance Tuning](#setting-the-right-batch-size) section for a detailed discussion.
-Finally, `sparkHome` and `jars` are optional parameters, which need to be set when running
-on a cluster to specify the location of your code, as described in the
-[Spark programming guide](scala-programming-guide.html#deploying-code-on-a-cluster).
+which will be shown on your cluster's web UI. The `batchInterval` is the size of the batches
+as explained earlier. Finally, `sparkHome` and `jars` are optional parameters,
+which need to be set to specify the location of your code,  when running
+on a cluster. See the [Spark programming guide](scala-programming-guide
+.html#deploying-code-on-a-cluster) for more details.
+Additionally, the underlying SparkContext can be accessed as `streamingContext.sparkContext`.
 
-The underlying SparkContext can be accessed as `context.sparkContext`.
+The batch interval must be set based on the latency requirements of your application
+and available cluster resources. See the [Performance Tuning](#setting-the-right-batch-size)
+section for more details.
 
 ## DStreams
 *Discretized Stream* or *DStream* is the basic abstraction provided by Spark Streaming.
-It represents a continuous stream of data, either the raw data stream received from source,
-or the processed data stream generated by transforming the raw data stream. Internally,
-it is represented by a continuous sequence of RDDs, which Spark's abstraction of an immutable,
+It represents a continuous stream of data, either the input data stream received from source,
+or the processed data stream generated by transforming the input stream. Internally,
+it is represented by a continuous sequence of RDDs, which is Spark's abstraction of an immutable,
 distributed dataset. Each RDD in a DStream contains data from a certain interval,
 as shown in the following figure.
 
@@ -444,7 +444,7 @@ database.
 
 ### Transformations
 DStreams support many of the transformations available on normal Spark RDD's. Some of the
-prominent ones are as follows.
+common ones are as follows.
 
 <table class="table">
 <tr><th style="width:25%">Transformation</th><th>Meaning</th></tr>
@@ -497,12 +497,12 @@ prominent ones are as follows.
 </tr>
 <tr>
   <td> <b>join</b>(<i>otherStream</i>, [<i>numTasks</i>]) </td>
-  <td> When called on two DStreams of (K, V) and (K, W) pairs, returns a new DStream of (K, (V, W))
+  <td> When called on two DStreams of (K, V) and (K, W) pairs, return a new DStream of (K, (V, W))
   pairs with all pairs of elements for each key. </td>
 </tr>
 <tr>
   <td> <b>cogroup</b>(<i>otherStream</i>, [<i>numTasks</i>]) </td>
-  <td> When called on DStream of (K, V) and (K, W) pairs, returns a new DStream of
+  <td> When called on DStream of (K, V) and (K, W) pairs, return a new DStream of
   (K, Seq[V], Seq[W]) tuples.</td>
 </tr>
 <tr>
@@ -681,7 +681,7 @@ JavaPairDStream<String, Integer> windowedWordCounts = pair.reduceByKeyAndWindow(
 </div>
 </div>
 
-Some of the prominent window-based operations are as follows. All of these operations take the
+Some of the common window-based operations are as follows. All of these operations take the
 said two parameters - <i>windowLength</i> and <i>slideInterval</i>.
 
 <table class="table">

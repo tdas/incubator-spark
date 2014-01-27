@@ -894,14 +894,15 @@ it has the following behavior:
 This behavior is made simple by using `StreamingContext.getOrCreate`. This is used as follows.
 
 <div class="codetabs">
-<div data-lang="scala">
+<div data-lang="scala" markdown="1">
 
 {% highlight scala %}
 // Function to create and setup a new StreamingContext
 def functionToCreateContext(): StreamingContext = {
-    val ssc = new StreamingContext(...)
-    val lines = ssc.socketTextStream(...)
+    val ssc = new StreamingContext(...)   // new context
+    val lines = ssc.socketTextStream(...) // create DStreams
     ...
+    ssc.checkpoint(checkpointDirectory)   // set checkpoint directory
     ssc
 }
 
@@ -917,16 +918,28 @@ context.start()
 context.awaitTermination()
 {% endhighlight %}
 
+If the `checkpointDirectory` exists, then the context will be recreated from the checkpoint data.
+If the directory does not exist (i.e., running for the first time),
+then the function `functionToCreateContext` will be called to create a new
+context and set up the DStreams. See the Scala example [RecoverableNetworkWordCount](https://github
+.com/apache/incubator-spark/blob/master/examples/src/main/scala/org/apache/spark/streaming/examples/
+RecoverableNetworkWordCount.scala?source=c). This example appends the word counts of network
+data into a file.
+
+You can also explicitly create a `StreamingContext` from the checkpoint information and start the
+ computation  using `new StreamingContext(checkpointDirectory)`.
+
 </div>
-<div data-lang="java">
+<div data-lang="java" markdown="1">
 
 {% highlight java %}
 // Create a factor object that can create a and setup a new JavaStreamingContext
 JavaStreamingContextFactory contextFactory = new JavaStreamingContextFactory() {
   JavaStreamingContextFactory create() {
-    JavaStreamingContext jssc = new JavaStreamingContext(...);
-    JavaDStream<String> lines = jssc.socketTextStream(...);
+    JavaStreamingContext jssc = new JavaStreamingContext(...);  // new context
+    JavaDStream<String> lines = jssc.socketTextStream(...);     // create DStreams
     ...
+    jssc.checkpoint(checkpointDirectory);                       // set checkpoint directory
     return jssc;
   }
 };
@@ -943,24 +956,38 @@ context.start();
 context.awaitTermination();
 {% endhighlight %}
 
-</div>
-</div>
-
 If the `checkpointDirectory` exists, then the context will be recreated from the checkpoint data.
 If the directory does not exist (i.e., running for the first time),
-then the function `functionToCreateContext` will be called to create a new
-context and set up the DStreams. See the Scala example [RecoverableNetworkWordCount](https://github
+then the function `contextFactory` will be called to create a new
+context and set up the DStreams. See the Scala example [JavaRecoverableWordCount](https://github
 .com/apache/incubator-spark/blob/master/examples/src/main/scala/org/apache/spark/streaming/examples/
-RecoverableNetworkWordCount.scala?source=c).
+JavaRecoverableWordCount.scala?source=c) (note that this example is missing in the 0.9 release,
+so you can test it using the master branch). This example appends the word counts of network
+data into a file.
 
-You can also explicitly create a `StreamingContext` from the checkpoint information and start the
- computation  using `new StreamingContext(checkpointDirectory).start()`.
+You can also explicitly create a `JavaStreamingContext` from the checkpoint information and start
+the computation  using `new JavaStreamingContext(checkpointDirectory)`.
+
+</div>
+</div>
+
+**Note**: If Spark Streaming and/or the Spark Streaming program is recompiled,
+you *must* create a new `StreamingContext` or `JavaStreamingContext`,
+not recreate from checkpoint data. This is because trying to load a
+context from checkpoint data may fail if the data was generated before recompilation of the
+classes. So, if you are using `getOrCreate`, then make sure that the checkpoint directory is
+explicitly deleted every time recompiled code needs to be launched.
 
 This failure recovery can be done automatically using Spark's
 [standalone cluster mode](spark-standalone.html), which allows any Spark
 application's driver to be as well as, ensures automatic restart of the driver on failure (see
-[supervise mode](spark-standalone.html#launching-applications-inside-the-cluster)). For other
-deployment environments like Mesos and Yarn, you have to restart the driver through other
+[supervise mode](spark-standalone.html#launching-applications-inside-the-cluster)). This can be
+tested locally by launching the above example using the supervise mode in a
+local standalone cluster and killing the java process running the driver (will be shown as
+*DriverWrapper* when `jps` is run to show all active Java processes). The driver should be
+automatically restarted, and the word counts will cont
+
+For other deployment environments like Mesos and Yarn, you have to restart the driver through other
 mechanisms.
 
 <h4>Recovery Semantics</h4>

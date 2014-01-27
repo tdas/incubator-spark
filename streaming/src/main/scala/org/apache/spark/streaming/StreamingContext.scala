@@ -188,6 +188,7 @@ class StreamingContext private[streaming] (
       val fullPath = fs.getFileStatus(path).getPath().toString
       sc.setCheckpointDir(fullPath)
       checkpointDir = fullPath
+      logInfo("Set checkpoint directory as " + checkpointDir)
     } else {
       checkpointDir = null
     }
@@ -477,12 +478,18 @@ object StreamingContext extends Logging {
     } catch {
       case e: Exception =>
         if (createOnError) {
+          logWarning("CreateOnError is true, ignoring checkpoint read error " + e.getMessage)
           None
         } else {
           throw e
         }
     }
-    checkpointOption.map(new StreamingContext(null, _, null)).getOrElse(creatingFunc())
+    checkpointOption.map(new StreamingContext(null, _, null)).getOrElse({
+      logInfo("Creating new StreamingContext")
+      val newSsc = creatingFunc()
+      newSsc.checkpoint(checkpointPath)
+      newSsc
+    })
   }
 
   /**

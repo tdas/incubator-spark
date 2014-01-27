@@ -102,8 +102,8 @@ private[spark] class ClientArguments(args: Array[String]) {
     //       separately similar to in the YARN client.
     val usage =
       s"""
-        |Usage: DriverClient [options] launch <active-master> <jar-url> <main-class> [driver options]
-        |Usage: DriverClient kill <active-master> <driver-id>
+        |Usage: Client [options] launch <active-master> <jar-url> <main-class> [driver options]
+        |Usage: Client kill <active-master> <driver-id>
         |
         |Options:
         |   -c CORES, --cores CORES        Number of cores to request (default: $defaultCores)

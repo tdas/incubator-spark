@@ -176,7 +176,7 @@ Once you submit a driver program, it will appear in the cluster management UI at
 be assigned an identifier. If you'd like to prematurely terminate the program, you can do so using
 the same client:
 
-    ./bin/spark-class org.apache.spark.deploy.client.DriverClient kill <driverId>
+    ./bin/spark-class org.apache.spark.deploy.Client kill <driverId>
 
 # Resource Scheduling
 

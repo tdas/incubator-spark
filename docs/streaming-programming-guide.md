@@ -115,7 +115,7 @@ ssc.awaitTermination()  // Wait for the computation to terminate
 {% endhighlight %}
 
 The complete code can be found in the Spark Streaming example
-[NetworkWordCount](https://github.com/apache/incubator-spark/tree/master/examples/src/main/scala/
+[NetworkWordCount]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/scala/
 org/apache/spark/streaming/examples/NetworkWordCount.scala).
 <br>
 
@@ -199,7 +199,7 @@ jssc.awaitTermination();   // Wait for the computation to terminate
 {% endhighlight %}
 
 The complete code can be found in the Spark Streaming example
-[JavaNetworkWordCount](https://github.com/apache/incubator-spark/tree/master/examples/src/main/java/
+[JavaNetworkWordCount]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/java/
 org/apache/spark/streaming/examples/JavaNetworkWordCount.java).
 <br>
 
@@ -578,7 +578,7 @@ JavaPairDStream<String, Integer> runningCounts = pairs.updateStateByKey(updateFu
 The update function will be called for each word, with `newValues` having a sequence of 1's (from
 the `(word, 1)` pairs) and the `runningCount` having the previous count. For the complete
 Scala code, take a look at the example
-[StatefulNetworkWordCount](https://github.com/apache/incubator-spark/blob/master/examples/src/
+[StatefulNetworkWordCount]({{site.SPARK_GITHUB_URL}}/blob/master/examples/src/
 main/scala/org/apache/spark/streaming/examples/StatefulNetworkWordCount.scala).
 
 <h4>Transform Operation</h4>
@@ -1231,7 +1231,7 @@ and output 30 after recovery.
   .ZeroMQUtils$), and [MQTT](api/external/mqtt/index.html#org.apache.spark.streaming.mqtt.MQTTUtils$)
 
 
-* More examples in [Scala](https://github.com/apache/incubator-spark/tree/master/examples/src/main/
-scala/org/apache/spark/streaming/examples) and [Java](https://github.com/apache/incubator-spark/
+* More examples in [Scala]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/
+scala/org/apache/spark/streaming/examples) and [Java]({{site.SPARK_GITHUB_URL}}/
 tree/master/examples/src/main/java/org/apache/spark/streaming/examples)
 * [Paper](http://www.eecs.berkeley.edu/Pubs/TechRpts/2012/EECS-2012-259.pdf) describing Spark Streaming

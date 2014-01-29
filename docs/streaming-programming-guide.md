@@ -115,16 +115,14 @@ ssc.awaitTermination()  // Wait for the computation to terminate
 {% endhighlight %}
 
 The complete code can be found in the Spark Streaming example
-[NetworkWordCount]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/scala/
-org/apache/spark/streaming/examples/NetworkWordCount.scala).
+[NetworkWordCount]({{site.SPARK_GITHUB_URL}}/blob/master/examples/src/main/scala/org/apache/spark/streaming/examples/NetworkWordCount.scala).
 <br>
 
 </div>
 <div data-lang="java" markdown="1">
 
 First, we create a
-[JavaStreamingContext](api/streaming/index.html#org.apache.spark.streaming.api.java
-.JavaStreamingContext) object,
+[JavaStreamingContext](api/streaming/index.html#org.apache.spark.streaming.api.java.JavaStreamingContext) object,
 which is the main entry point for all streaming
 functionality. Besides Spark's configuration, we specify that any DStream would be processed
 in 1 second batches.
@@ -184,8 +182,8 @@ wordCount.print();     // Print a few of the counts to the console
 {% endhighlight %}
 
 The `words` DStream is further mapped (one-to-one transformation) to a DStream of `(word,
-1)` pairs, using a [PairFunction](api/core/index.html#org.apache.spark.api.java.function
-.PairFunction) object. Then, it is reduced to get the frequency of words in each batch of data,
+1)` pairs, using a [PairFunction](api/core/index.html#org.apache.spark.api.java.function.PairFunction)
+object. Then, it is reduced to get the frequency of words in each batch of data,
 using a [Function2](api/core/index.html#org.apache.spark.api.java.function.Function2) object.
 Finally, `wordCounts.print()` will print a few of the counts generated every second.
 
@@ -199,8 +197,7 @@ jssc.awaitTermination();   // Wait for the computation to terminate
 {% endhighlight %}
 
 The complete code can be found in the Spark Streaming example
-[JavaNetworkWordCount]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/java/
-org/apache/spark/streaming/examples/JavaNetworkWordCount.java).
+[JavaNetworkWordCount]({{site.SPARK_GITHUB_URL}}/blob/master/examples/src/main/java/org/apache/spark/streaming/examples/JavaNetworkWordCount.java).
 <br>
 
 </div>
@@ -319,8 +316,7 @@ new StreamingContext(master, appName, batchDuration, [sparkHome], [jars])
 <div data-lang="java" markdown="1">
 
 To initialize a Spark Streaming program in Java, a
-[`JavaStreamingContext`](api/streaming/index.html#org.apache.spark.streaming.api
-.java.JavaStreamingContext)
+[`JavaStreamingContext`](api/streaming/index.html#org.apache.spark.streaming.api.java.JavaStreamingContext)
 object has to be created, which is the main entry point of all Spark Streaming functionality.
 A `JavaStreamingContext` object can be created by using
 
@@ -334,8 +330,9 @@ The `master` parameter is a standard [Spark cluster URL](scala-programming-guide
 and can be "local" for local testing. The `appName` is a name of your program,
 which will be shown on your cluster's web UI. The `batchInterval` is the size of the batches,
 as explained earlier. Finally, the last two parameters are needed to deploy your code to a cluster
- if running in distributed mode, as described in the [Spark programming guide](scala-programming-guide
-.html#deploying-code-on-a-cluster). Additionally, the underlying SparkContext can be accessed as
+ if running in distributed mode, as described in the
+ [Spark programming guide](scala-programming-guide.html#deploying-code-on-a-cluster).
+ Additionally, the underlying SparkContext can be accessed as
 `streamingContext.sparkContext`.
 
 The batch interval must be set based on the latency requirements of your application
@@ -407,8 +404,8 @@ and process any files created in that directory. Note that
 For more details on streams from files, Akka actors and sockets,
 see the API documentations of the relevant functions in
 [StreamingContext](api/streaming/index.html#org.apache.spark.streaming.StreamingContext) for
-Scala and [JavaStreamingContext](api/streaming/index.html#org.apache.spark.streaming.api.
-java.JavaStreamingContext) for Java.
+Scala and [JavaStreamingContext](api/streaming/index.html#org.apache.spark.streaming.api.java.JavaStreamingContext)
+ for Java.
 
 Additional functionality for creating DStreams from sources such as Kafka, Flume, and Twitter
 can be imported by adding the right dependencies as explained in an
@@ -578,8 +575,7 @@ JavaPairDStream<String, Integer> runningCounts = pairs.updateStateByKey(updateFu
 The update function will be called for each word, with `newValues` having a sequence of 1's (from
 the `(word, 1)` pairs) and the `runningCount` having the previous count. For the complete
 Scala code, take a look at the example
-[StatefulNetworkWordCount]({{site.SPARK_GITHUB_URL}}/blob/master/examples/src/
-main/scala/org/apache/spark/streaming/examples/StatefulNetworkWordCount.scala).
+[StatefulNetworkWordCount]({{site.SPARK_GITHUB_URL}}/blob/master/examples/src/main/scala/org/apache/spark/streaming/examples/StatefulNetworkWordCount.scala).
 
 <h4>Transform Operation</h4>
 
@@ -781,7 +777,7 @@ output operators are defined:
 The complete list of DStream operations is available in the API documentation. For the Scala API,
 see [DStream](api/streaming/index.html#org.apache.spark.streaming.dstream.DStream)
 and [PairDStreamFunctions](api/streaming/index.html#org.apache.spark.streaming.dstream.PairDStreamFunctions).
-For the Java API, see [JavaDStream](api/streaming/index.html#org.apache.spark.api.java.dstream.DStream)
+For the Java API, see [JavaDStream](api/streaming/index.html#org.apache.spark.streaming.api.java.dstream.DStream)
 and [JavaPairDStream](api/streaming/index.html#org.apache.spark.streaming.api.java.JavaPairDStream).
 Specifically for the Java API, see [Spark's Java programming guide](java-programming-guide.html)
 for more information.
@@ -858,7 +854,7 @@ Cluster resources maybe under-utilized if the number of parallel tasks used in a
 computation is not high enough. For example, for distributed reduce operations like `reduceByKey`
 and `reduceByKeyAndWindow`, the default number of parallel tasks is 8. You can pass the level of
 parallelism as an argument (see the
-[`PairDStreamFunctions`](api/streaming/index.html#org.apache.spark.PairDStreamFunctions)
+[`PairDStreamFunctions`](api/streaming/index.html#org.apache.spark.streaming.dstream.PairDStreamFunctions)
 documentation), or set the [config property](configuration.html#spark-properties)
 `spark.default.parallelism` to change the default.
 
@@ -902,7 +898,8 @@ A good approach to figure out the right batch size for your application is to te
 conservative batch size (say, 5-10 seconds) and a low data rate. To verify whether the system
 is able to keep up with data rate, you can check the value of the end-to-end delay experienced
 by each processed batch (either look for "Total delay" in Spark driver log4j logs, or use the
-[StreamingListener](streaming/index.html#org.apache.spark.scheduler.StreamingListener) interface).
+[StreamingListener](api/streaming/index.html#org.apache.spark.streaming.scheduler.StreamingListener)
+interface).
 If the delay is maintained to be comparable to the batch size, then system is stable. Otherwise,
 if the delay is continuously increasing, it means that the system is unable to keep up and it
 therefore unstable. Once you have an idea of a stable configuration, you can try increasing the
@@ -1050,10 +1047,9 @@ context.awaitTermination()
 If the `checkpointDirectory` exists, then the context will be recreated from the checkpoint data.
 If the directory does not exist (i.e., running for the first time),
 then the function `functionToCreateContext` will be called to create a new
-context and set up the DStreams. See the Scala example [RecoverableNetworkWordCount](https://github
-.com/apache/incubator-spark/blob/master/examples/src/main/scala/org/apache/spark/streaming/examples/
-RecoverableNetworkWordCount.scala?source=c). This example appends the word counts of network
-data into a file.
+context and set up the DStreams. See the Scala example
+[RecoverableNetworkWordCount]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/scala/org/apache/spark/streaming/examples/RecoverableNetworkWordCount.scala).
+This example appends the word counts of network data into a file.
 
 You can also explicitly create a `StreamingContext` from the checkpoint data and start the
  computation by using `new StreamingContext(checkpointDirectory)`.
@@ -1090,11 +1086,10 @@ context.awaitTermination();
 If the `checkpointDirectory` exists, then the context will be recreated from the checkpoint data.
 If the directory does not exist (i.e., running for the first time),
 then the function `contextFactory` will be called to create a new
-context and set up the DStreams. See the Scala example [JavaRecoverableWordCount](https://github
-.com/apache/incubator-spark/blob/master/examples/src/main/scala/org/apache/spark/streaming/examples/
-JavaRecoverableWordCount.scala?source=c) (note that this example is missing in the 0.9 release,
-so you can test it using the master branch). This example appends the word counts of network
-data into a file.
+context and set up the DStreams. See the Scala example
+[JavaRecoverableWordCount]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/scala/org/apache/spark/streaming/examples/JavaRecoverableWordCount.scala)
+(note that this example is missing in the 0.9 release, so you can test it using the master branch).
+This example appends the word counts of network data into a file.
 
 You can also explicitly create a `JavaStreamingContext` from the checkpoint data and start
 the computation by using `new JavaStreamingContext(checkpointDirectory)`.
@@ -1222,16 +1217,15 @@ and output 30 after recovery.
 # Where to Go from Here
 
 * API documentation
-  - Main docs of StreamingContext and DStreams in [Scala](api/streaming/index.html#org.apache
-  .spark.streaming.package) and [Java](api/streaming/index.html#org.apache.spark.streaming.api.java.package)
-  - Additional docs for [Kafka](api/external/kafka/index.html#org.apache.spark.streaming.kafka
-  .KafkaUtils$), [Flume](api/external/flume/index.html#org.apache.spark.streaming.flume
-  .FlumeUtils$), [Twitter](api/external/twitter/index.html#org.apache.spark.streaming.twitter
-  .TwitterUtils$), [ZeroMQ](api/external/zeromq/index.html#org.apache.spark.streaming.zeromq
-  .ZeroMQUtils$), and [MQTT](api/external/mqtt/index.html#org.apache.spark.streaming.mqtt.MQTTUtils$)
+  - Main docs of StreamingContext and DStreams in [Scala](api/streaming/index.html#org.apache.spark.streaming.package)
+    and [Java](api/streaming/index.html#org.apache.spark.streaming.api.java.package)
+  - Additional docs for
+    [Kafka](api/external/kafka/index.html#org.apache.spark.streaming.kafka.KafkaUtils$),
+    [Flume](api/external/flume/index.html#org.apache.spark.streaming.flume.FlumeUtils$),
+    [Twitter](api/external/twitter/index.html#org.apache.spark.streaming.twitter.TwitterUtils$),
+    [ZeroMQ](api/external/zeromq/index.html#org.apache.spark.streaming.zeromq.ZeroMQUtils$), and
+    [MQTT](api/external/mqtt/index.html#org.apache.spark.streaming.mqtt.MQTTUtils$)
 
-
-* More examples in [Scala]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/
-scala/org/apache/spark/streaming/examples) and [Java]({{site.SPARK_GITHUB_URL}}/
-tree/master/examples/src/main/java/org/apache/spark/streaming/examples)
+* More examples in [Scala]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/scala/org/apache/spark/streaming/examples)
+  and [Java]({{site.SPARK_GITHUB_URL}}/tree/master/examples/src/main/java/org/apache/spark/streaming/examples)
 * [Paper](http://www.eecs.berkeley.edu/Pubs/TechRpts/2012/EECS-2012-259.pdf) describing Spark Streaming

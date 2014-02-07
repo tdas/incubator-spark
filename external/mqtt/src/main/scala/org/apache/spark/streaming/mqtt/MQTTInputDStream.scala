@@ -68,9 +68,7 @@ class MQTTReceiver(
     storageLevel: StorageLevel
   ) extends NetworkReceiver[String](storageLevel) {
 
-  def onStop() {
-
-  }
+  def onStop() { }
   
   def onStart() {
 
@@ -94,8 +92,7 @@ class MQTTReceiver(
         store(new String(arg1.getPayload()))
       }
 
-      override def deliveryComplete(arg0: IMqttDeliveryToken) {
-      }
+      override def deliveryComplete(arg0: IMqttDeliveryToken) { }
 
       override def connectionLost(arg0: Throwable) {
         store("Connection lost " + arg0)

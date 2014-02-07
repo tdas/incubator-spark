@@ -110,7 +110,6 @@ class KafkaReceiver[
     val topicMessageStreams = consumerConnector.createMessageStreams(
       topics, keyDecoder, valueDecoder)
 
-
     // Start the messages handler for each partition
     topicMessageStreams.values.foreach { streams =>
       streams.foreach { stream => executorPool.submit(new MessageHandler(stream)) }

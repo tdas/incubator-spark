@@ -62,17 +62,15 @@ class TwitterReceiver(
     twitterAuth: Authorization,
     filters: Seq[String],
     storageLevel: StorageLevel
-  ) extends NetworkReceiver[Status] {
+  ) extends NetworkReceiver[Status](storageLevel) with Logging {
 
   var twitterStream: TwitterStream = _
-  lazy val blockGenerator = new BlockGenerator(storageLevel)
 
-  protected override def onStart() {
-    blockGenerator.start()
+  def onStart() {
     twitterStream = new TwitterStreamFactory().getInstance(twitterAuth)
     twitterStream.addListener(new StatusListener {
       def onStatus(status: Status) = {
-        blockGenerator += status
+        store(status)
       }
       // Unimplemented
       def onDeletionNotice(statusDeletionNotice: StatusDeletionNotice) {}
@@ -92,8 +90,7 @@ class TwitterReceiver(
     logInfo("Twitter receiver started")
   }
 
-  protected override def onStop() {
-    blockGenerator.stop()
+  def onStop() {
     twitterStream.shutdown()
     logInfo("Twitter receiver stopped")
   }

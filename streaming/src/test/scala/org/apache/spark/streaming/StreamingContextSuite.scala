@@ -184,8 +184,8 @@ class StreamingContextSuite extends FunSuite with BeforeAndAfter with Timeouts w
       var runningCount = 0
       TestReceiver.counter.set(1)
       val input = ssc.networkStream(new TestReceiver)
-      input.count.foreachRDD(rdd => {
-        val count = rdd.first()
+      input.foreachRDD(rdd => {
+        val count = rdd.count()
         logInfo("Count = " + count)
         runningCount += count.toInt
       })
@@ -195,12 +195,7 @@ class StreamingContextSuite extends FunSuite with BeforeAndAfter with Timeouts w
       logInfo("Running count = " + runningCount)
       logInfo("TestReceiver.counter = " + TestReceiver.counter.get())
       assert(runningCount > 0)
-      assert(
-        (TestReceiver.counter.get() == runningCount + 1) ||
-          (TestReceiver.counter.get() == runningCount + 2),
-        "Received records = " + TestReceiver.counter.get() + ", " +
-          "processed records = " + runningCount
-      )
+      assert(TestReceiver.counter.get() === runningCount + 1)
     }
   }
 
@@ -274,24 +269,18 @@ class StreamingContextSuite extends FunSuite with BeforeAndAfter with Timeouts w
 class TestException(msg: String) extends Exception(msg)
 
 /** Custom receiver for testing whether all data received by a receiver gets processed or not */
-class TestReceiver extends NetworkReceiver[Int] {
-  protected lazy val blockGenerator = new BlockGenerator(StorageLevel.MEMORY_ONLY)
-  protected def onStart() {
-    blockGenerator.start()
-    logInfo("BlockGenerator started on thread " + receivingThread)
+class TestReceiver extends NetworkReceiver[Int](StorageLevel.MEMORY_ONLY) with Logging {
+  def onStart() {
     try {
-      while(true) {
-        blockGenerator += TestReceiver.counter.getAndIncrement
-        Thread.sleep(0)
+      while(!isStopped) {
+        store(TestReceiver.counter.getAndIncrement)
       }
     } finally {
       logInfo("Receiving stopped at count value of " + TestReceiver.counter.get())
     }
   }
 
-  protected def onStop() {
-    blockGenerator.stop()
-  }
+  def onStop() { }
 }
 
 object TestReceiver {

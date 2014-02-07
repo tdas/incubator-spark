@@ -134,7 +134,7 @@ class NetworkInputTracker(ssc: StreamingContext) extends Logging {
   /** This thread class runs all the receivers on the cluster.  */
   class ReceiverExecutor {
     @transient val env = ssc.env
-    @transient val thread  = new Thread() {
+    @transient val jobThread  = new Thread() {
       override def run() {
         try {
           SparkEnv.set(env)
@@ -146,7 +146,7 @@ class NetworkInputTracker(ssc: StreamingContext) extends Logging {
     }
 
     def start() {
-      thread.start()
+      jobThread.start()
     }
 
     def stop() {
@@ -155,7 +155,7 @@ class NetworkInputTracker(ssc: StreamingContext) extends Logging {
 
       // Wait for the Spark job that runs the receivers to be over
       // That is, for the receivers to quit gracefully.
-      thread.join(10000)
+      jobThread.join()
 
       // Check if all the receivers have been deregistered or not
       if (!receiverInfo.isEmpty) {
@@ -172,17 +172,17 @@ class NetworkInputTracker(ssc: StreamingContext) extends Logging {
     private def startReceivers() {
       val receivers = networkInputStreams.map(nis => {
         val rcvr = nis.getReceiver()
-        rcvr.setStreamId(nis.id)
+        rcvr.setReceiverId(nis.id)
         rcvr
       })
 
       // Right now, we only honor preferences if all receivers have them
-      val hasLocationPreferences = receivers.map(_.getLocationPreference().isDefined).reduce(_ && _)
+      val hasLocationPreferences = receivers.map(_.preferredLocation.isDefined).reduce(_ && _)
 
       // Create the parallel collection of receivers to distributed them on the worker nodes
       val tempRDD =
         if (hasLocationPreferences) {
-          val receiversWithPreferences = receivers.map(r => (r, Seq(r.getLocationPreference().toString)))
+          val receiversWithPreferences = receivers.map(r => (r, Seq(r.preferredLocation.get)))
           ssc.sc.makeRDD[NetworkReceiver[_]](receiversWithPreferences)
         }
         else {
@@ -194,7 +194,7 @@ class NetworkInputTracker(ssc: StreamingContext) extends Logging {
         if (!iterator.hasNext) {
           throw new Exception("Could not start receiver as details not found.")
         }
-        iterator.next().start()
+        iterator.next().handler.run()
       }
       // Run the dummy Spark job to ensure that all slaves have registered.
       // This avoids all the receivers to be scheduled on the same node.

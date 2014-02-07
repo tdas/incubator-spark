@@ -312,18 +312,16 @@ class TestActor(port: Int) extends Actor with Receiver {
 
 /** This is a receiver to test multiple threads inserting data using block generator */
 class MultiThreadTestReceiver(numThreads: Int, numRecordsPerThread: Int)
-  extends NetworkReceiver[Int] {
+  extends NetworkReceiver[Int](StorageLevel.MEMORY_ONLY_SER) with Logging {
   lazy val executorPool = Executors.newFixedThreadPool(numThreads)
-  lazy val blockGenerator = new BlockGenerator(StorageLevel.MEMORY_ONLY)
   lazy val finishCount = new AtomicInteger(0)
 
-  protected def onStart() {
-    blockGenerator.start()
+  def onStart() {
     (1 to numThreads).map(threadId => {
       val runnable = new Runnable {
         def run() {
           (1 to numRecordsPerThread).foreach(i =>
-            blockGenerator += (threadId * numRecordsPerThread + i) )
+            store(threadId * numRecordsPerThread + i) )
           if (finishCount.incrementAndGet == numThreads) {
             MultiThreadTestReceiver.haveAllThreadsFinished = true
           }
@@ -334,7 +332,7 @@ class MultiThreadTestReceiver(numThreads: Int, numRecordsPerThread: Int)
     })
   }
 
-  protected def onStop() {
+  def onStop() {
     executorPool.shutdown()
   }
 }

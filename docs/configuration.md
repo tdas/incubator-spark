@@ -158,9 +158,7 @@ Apart from these, the following properties are also available, and may be useful
   <td>spark.shuffle.spill.compress</td>
   <td>true</td>
   <td>
-    Whether to compress data spilled during shuffles. If enabled, spill compression
-    always uses the `org.apache.spark.io.LZFCompressionCodec` codec, 
-    regardless of the value of `spark.io.compression.codec`.
+    Whether to compress data spilled during shuffles.
   </td>
 </tr>
 <tr>
@@ -399,6 +397,14 @@ Apart from these, the following properties are also available, and may be useful
   </td>
 </tr>
 <tr>
+  <td>spark.shuffle.file.buffer.kb</td>
+  <td>100</td>
+  <td>
+    Size of the in-memory buffer for each shuffle file output stream, in kilobytes. These buffers
+    reduce the number of disk seeks and system calls made in creating intermediate shuffle files.
+  </td>
+</tr>
+<tr>
   <td>spark.shuffle.spill</td>
   <td>true</td>
   <td>
@@ -463,6 +469,13 @@ Apart from these, the following properties are also available, and may be useful
     the whole cluster by default. <br/>
     <b>Note:</b> this setting needs to be configured in the standalone cluster master, not in individual
     applications; you can set it through <code>SPARK_JAVA_OPTS</code> in <code>spark-env.sh</code>.
+</td>
+</tr>
+<tr>
+  <td>spark.files.overwrite</td>
+  <td>false</td>
+  <td>
+    Whether to overwrite files added through SparkContext.addFile() when the target file exists and its contents do not match those of the source.
   </td>
 </tr>
 </table>

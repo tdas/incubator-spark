@@ -15,10 +15,35 @@
  * limitations under the License.
  */
 
-import sbt._
+package org.apache.spark.rdd
 
-object SparkPluginDef extends Build {
-  lazy val root = Project("plugins", file(".")) dependsOn(junitXmlListener)
-  /* This is not published in a Maven repository, so we get it from GitHub directly */
-  lazy val junitXmlListener = uri("https://github.com/ijuma/junit_xml_listener.git#fe434773255b451a38e8d889536ebc260f4225ce")
+import org.scalatest.FunSuite
+import org.apache.spark.SharedSparkContext
+import org.apache.spark.util.random.RandomSampler
+
+/** a sampler that outputs its seed */
+class MockSampler extends RandomSampler[Long, Long] {
+
+  private var s: Long = _
+
+  override def setSeed(seed: Long) {
+    s = seed
+  }
+
+  override def sample(items: Iterator[Long]): Iterator[Long] = {
+    return Iterator(s)
+  }
+
+  override def clone = new MockSampler
 }
+
+class PartitionwiseSampledRDDSuite extends FunSuite with SharedSparkContext {
+
+  test("seedDistribution") {
+    val rdd = sc.makeRDD(Array(1L, 2L, 3L, 4L), 2)
+    val sampler = new MockSampler
+    val sample = new PartitionwiseSampledRDD[Long, Long](rdd, sampler, 0L)
+    assert(sample.distinct.count == 2, "Seeds must be different.")
+  }
+}
+

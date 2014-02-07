@@ -15,10 +15,20 @@
  * limitations under the License.
  */
 
-import sbt._
+package org.apache.spark.api.python
 
-object SparkPluginDef extends Build {
-  lazy val root = Project("plugins", file(".")) dependsOn(junitXmlListener)
-  /* This is not published in a Maven repository, so we get it from GitHub directly */
-  lazy val junitXmlListener = uri("https://github.com/ijuma/junit_xml_listener.git#fe434773255b451a38e8d889536ebc260f4225ce")
+import org.scalatest.FunSuite
+import org.scalatest.matchers.ShouldMatchers
+
+import java.io.{ByteArrayOutputStream, DataOutputStream}
+
+class PythonRDDSuite extends FunSuite {
+
+    test("Writing large strings to the worker") {
+        val input: List[String] = List("a"*100000)
+        val buffer = new DataOutputStream(new ByteArrayOutputStream)
+        PythonRDD.writeIteratorToStream(input.iterator, buffer)
+    }
+
 }
+
